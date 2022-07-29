@@ -5,7 +5,10 @@ use serenity::{framework::StandardFramework, prelude::GatewayIntents, Client};
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {
     let bot = Bot::new("./config.json")?;
-    let intents = GatewayIntents::GUILDS | GatewayIntents::GUILD_MESSAGE_REACTIONS;
+    let intents = GatewayIntents::GUILDS
+        | GatewayIntents::GUILD_MESSAGE_REACTIONS
+        | GatewayIntents::GUILD_MESSAGES
+        | GatewayIntents::MESSAGE_CONTENT;
 
     let framework =
         StandardFramework::new().configure(|c| c.with_whitespace(true).prefix(&bot.cfg.prefix));

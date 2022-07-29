@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use serde::{Deserialize, Serialize};
 use serenity::model::{gateway::ActivityType, id::ChannelId};
@@ -15,6 +15,8 @@ pub struct Config {
     pub status: Status,
     pub reaction_roles: HashMap<String, String>,
     pub reaction_role_channel: ChannelId,
+    pub thread_channels: HashSet<String>,
+    pub thread_creation_message: String,
 }
 
 impl Config {

@@ -1,20 +1,22 @@
+use regex::Regex;
 use serenity::{
     async_trait,
     client::{Context, EventHandler},
     model::{
-        channel::Reaction,
+        channel::{Message, Reaction},
         gateway::{Activity, ActivityType, Ready},
     },
 };
 
-use crate::config::Config;
 use crate::reaction;
+use crate::{config::Config, thread_channel};
 
 #[derive(Debug)]
 pub struct Bot {
     pub cfg: Config,
     pub token: String,
     pub path: String,
+    pub emoji_regex: Regex,
 }
 
 impl Bot {
@@ -28,6 +30,7 @@ impl Bot {
             cfg,
             token,
             path: cfg_path.to_owned(),
+            emoji_regex: Regex::new(r"<:.+:[0-9]+>").unwrap(), // TODO: Make this configurable?!
         })
     }
 }
@@ -40,6 +43,10 @@ impl EventHandler for Bot {
 
     async fn reaction_remove(&self, ctx: Context, reaction: Reaction) {
         reaction::remove_role(self, ctx, reaction).await;
+    }
+
+    async fn message(&self, ctx: Context, msg: Message) {
+        thread_channel::create_thread(self, ctx, msg).await;
     }
 
     async fn ready(&self, ctx: Context, ready: Ready) {
