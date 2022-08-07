@@ -1,19 +1,23 @@
+use regex::Regex;
 use serenity::http::CacheHttp;
 use serenity::{client::Context, model::channel::Message};
 
-use crate::bot::Bot;
+use crate::config::Config;
 
-pub async fn create_thread(bot: &Bot, ctx: Context, msg: Message) -> Option<()> {
+pub async fn create_thread(ctx: Context, msg: Message) -> Option<()> {
+    let data = ctx.data.read().await;
+    let cfg = data.get::<Config>()?;
+
     // TODO: Maybe cache channel IDs here?
     let channel = msg
         .channel(ctx.http())
         .await
         .ok()
         .and_then(|channel| channel.guild())
-        .filter(|channel| bot.cfg.thread_channels.contains(channel.name()));
+        .filter(|channel| cfg.thread_channels.contains(channel.name()));
 
     if let Some(thread_channel) = channel {
-        let thread_name = create_thread_name(bot, &msg);
+        let thread_name = create_thread_name(&msg);
 
         let thread = thread_channel
             .create_public_thread(ctx.http(), msg.id, |thread| thread.name(&thread_name))
@@ -21,9 +25,7 @@ pub async fn create_thread(bot: &Bot, ctx: Context, msg: Message) -> Option<()> 
             .ok()?;
 
         thread
-            .send_message(ctx.http(), |msg| {
-                msg.content(&bot.cfg.thread_creation_message)
-            })
+            .send_message(ctx.http(), |msg| msg.content(&cfg.thread_creation_message))
             .await
             .ok()?;
 
@@ -38,9 +40,11 @@ pub async fn create_thread(bot: &Bot, ctx: Context, msg: Message) -> Option<()> 
     None
 }
 
-fn create_thread_name(bot: &Bot, msg: &Message) -> String {
+fn create_thread_name(msg: &Message) -> String {
+    // TODO: Maybe make this cached? It was cached but switching to type map required we stopped caching it.
+    let emoji_regex: Regex = Regex::new(r"<:.+:[0-9]+>").unwrap();
     // TODO: Maybe use a config for the default value here!
-    let thread_name = bot.emoji_regex.replace_all(msg.content.trim(), "");
+    let thread_name = emoji_regex.replace_all(msg.content.trim(), "");
     if thread_name.is_empty() {
         format!("Message from {}", msg.author.name)
     } else {

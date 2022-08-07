@@ -1,21 +1,22 @@
-use coding_companion::bot::Bot;
+use coding_companion::{config::Config, handler::Handler};
 
-use serenity::{framework::StandardFramework, prelude::GatewayIntents, Client};
+use serenity::{prelude::GatewayIntents, Client};
 
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {
-    let bot = Bot::new("./config.json")?;
+    let token = dotenv::var("DISCORD_TOKEN")
+        .expect("Could not locate an DISCORD_TOKEN environment variable!");
+
     let intents = GatewayIntents::GUILDS
         | GatewayIntents::GUILD_MESSAGE_REACTIONS
         | GatewayIntents::GUILD_MESSAGES
         | GatewayIntents::MESSAGE_CONTENT;
 
-    let framework =
-        StandardFramework::new().configure(|c| c.with_whitespace(true).prefix(&bot.cfg.prefix));
+    let config = Config::new("./config.json")?;
 
-    let mut client = Client::builder(&bot.token, intents)
-        .event_handler(bot) // TODO: Requires a static lifetime
-        .framework(framework)
+    let mut client = Client::builder(token, intents)
+        .event_handler(Handler) // TODO: Requires a static lifetime
+        .type_map_insert::<Config>(config)
         .await
         .expect("Could not create a client for the bot!");
 

@@ -1,7 +1,10 @@
 use std::collections::{HashMap, HashSet};
 
 use serde::{Deserialize, Serialize};
-use serenity::model::{gateway::ActivityType, id::ChannelId};
+use serenity::{
+    model::{gateway::ActivityType, id::ChannelId},
+    prelude::TypeMapKey,
+};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Status {
@@ -31,4 +34,8 @@ impl Config {
     pub fn get_role<'a>(&'a self, reaction: &str) -> Option<&'a String> {
         self.reaction_roles.get(reaction)
     }
+}
+
+impl TypeMapKey for Config {
+    type Value = Config;
 }

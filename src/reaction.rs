@@ -4,10 +4,13 @@ use serenity::{
     model::channel::{Reaction, ReactionType},
 };
 
-use crate::bot::Bot;
+use crate::config::Config;
 
-pub async fn add_role(bot: &Bot, ctx: Context, reaction: Reaction) -> Option<()> {
-    if reaction.channel_id != bot.cfg.reaction_role_channel {
+pub async fn add_role(ctx: Context, reaction: Reaction) -> Option<()> {
+    let data = ctx.data.read().await;
+    let cfg = data.get::<Config>()?;
+
+    if reaction.channel_id != cfg.reaction_role_channel {
         return None;
     }
 
@@ -17,7 +20,7 @@ pub async fn add_role(bot: &Bot, ctx: Context, reaction: Reaction) -> Option<()>
         name: Some(emoji_name),
     } = &reaction.emoji
     {
-        let role = bot.cfg.get_role(&emoji_name)?;
+        let role = cfg.get_role(&emoji_name)?;
         let guild = reaction.guild_id?.to_guild_cached(&ctx)?;
         let mut member = guild
             .member(ctx.http(), reaction.user_id.unwrap())
@@ -39,8 +42,11 @@ pub async fn add_role(bot: &Bot, ctx: Context, reaction: Reaction) -> Option<()>
     None
 }
 
-pub async fn remove_role(bot: &Bot, ctx: Context, reaction: Reaction) -> Option<()> {
-    if reaction.channel_id != bot.cfg.reaction_role_channel {
+pub async fn remove_role(ctx: Context, reaction: Reaction) -> Option<()> {
+    let data = ctx.data.read().await;
+    let cfg = data.get::<Config>()?;
+
+    if reaction.channel_id != cfg.reaction_role_channel {
         return None;
     }
 
@@ -50,7 +56,7 @@ pub async fn remove_role(bot: &Bot, ctx: Context, reaction: Reaction) -> Option<
         name: Some(emoji_name),
     } = &reaction.emoji
     {
-        let role = bot.cfg.get_role(&emoji_name)?;
+        let role = cfg.get_role(&emoji_name)?;
         let guild = reaction.guild_id?.to_guild_cached(&ctx)?;
         let mut member = guild
             .member(ctx.http(), reaction.user_id.unwrap())
