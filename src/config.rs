@@ -12,14 +12,19 @@ pub struct Status {
     pub message: String,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ThreadChannels {
+    pub channels: HashSet<String>,
+    pub creation_message: String,
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Config {
     pub prefix: String,
     pub status: Status,
     pub reaction_roles: HashMap<String, String>,
     pub reaction_role_channel: ChannelId,
-    pub thread_channels: HashSet<String>,
-    pub thread_creation_message: String,
+    pub thread_channels: ThreadChannels,
 }
 
 impl Config {

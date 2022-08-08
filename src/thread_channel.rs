@@ -1,5 +1,6 @@
 use regex::Regex;
 use serenity::http::CacheHttp;
+use serenity::utils::Color;
 use serenity::{client::Context, model::channel::Message};
 
 use crate::config::Config;
@@ -14,7 +15,7 @@ pub async fn create_thread(ctx: Context, msg: Message) -> Option<()> {
         .await
         .ok()
         .and_then(|channel| channel.guild())
-        .filter(|channel| cfg.thread_channels.contains(channel.name()));
+        .filter(|channel| cfg.thread_channels.channels.contains(channel.name()));
 
     if let Some(thread_channel) = channel {
         let thread_name = create_thread_name(&msg);
@@ -25,7 +26,13 @@ pub async fn create_thread(ctx: Context, msg: Message) -> Option<()> {
             .ok()?;
 
         thread
-            .send_message(ctx.http(), |msg| msg.content(&cfg.thread_creation_message))
+            .send_message(ctx.http(), |msg| {
+                msg.embed(|embed| {
+                    embed
+                        .color(Color::BLUE)
+                        .description(&cfg.thread_channels.creation_message)
+                })
+            })
             .await
             .ok()?;
 

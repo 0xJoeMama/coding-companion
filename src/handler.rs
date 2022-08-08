@@ -1,14 +1,15 @@
 use serenity::{
     async_trait,
     client::{Context, EventHandler},
+    http::CacheHttp,
     model::{
         channel::{Message, Reaction},
         gateway::{Activity, ActivityType, Ready},
+        prelude::interaction::{Interaction, InteractionType},
     },
 };
 
-use crate::reaction;
-use crate::{config::Config, thread_channel};
+use crate::{commands::Commands, config::Config, reaction, thread_channel};
 
 #[derive(Debug)]
 pub struct Handler;
@@ -25,6 +26,26 @@ impl EventHandler for Handler {
 
     async fn message(&self, ctx: Context, msg: Message) {
         thread_channel::create_thread(ctx, msg).await;
+    }
+
+    async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
+        match interaction.kind() {
+            InteractionType::ApplicationCommand => {
+                println!("Received command");
+                // unwrapping works since we just checked if it's a command
+                let cmd = interaction.application_command().unwrap();
+
+                let res = match cmd.data.name.as_str() {
+                    "ping" => Commands::Ping.handle(ctx, cmd).await,
+                    _ => Err(serenity::Error::Other("Could not find the target command")),
+                };
+
+                if let Err(error) = res {
+                    println!("Error handling command: {error}");
+                }
+            }
+            _ => {}
+        }
     }
 
     async fn ready(&self, ctx: Context, ready: Ready) {
@@ -47,5 +68,21 @@ impl EventHandler for Handler {
 
         ctx.set_activity(activity.unwrap_or_else(|| Activity::listening("everyone's requests!")))
             .await;
+
+        for guild in ready.guilds {
+            println!("Setting commands for {}", guild.id);
+            if let Err(error) = guild
+                .id
+                .set_application_commands(ctx.http(), |cmds| {
+                    cmds.create_application_command(|cmd| cmd.name("ping").description("Ping"))
+                })
+                .await
+            {
+                println!(
+                    "Could not set application commands for guild {}: {:?}",
+                    guild.id, error
+                );
+            }
+        }
     }
 }

@@ -1,14 +1,33 @@
 use serenity::{
-    async_trait, client::Context,
-    model::prelude::interaction::application_command::ApplicationCommandInteraction,
+    client::Context,
+    http::CacheHttp,
+    model::prelude::interaction::{
+        application_command::ApplicationCommandInteraction, InteractionResponseType,
+    },
+    utils::Color,
 };
 
-#[async_trait]
-trait Command<'a> {
-    async fn handle(&self, _ctx: Context, _cmd: ApplicationCommandInteraction) {
-        // _cmd.create_followup_message(_ctx.http(), |msg| msg.ephemeral);
-    }
-
-    fn name(&self) -> &'a str;
+pub enum Commands {
+    Ping,
 }
 
+impl Commands {
+    pub async fn handle(
+        &self,
+        ctx: Context,
+        cmd: ApplicationCommandInteraction,
+    ) -> Result<(), serenity::Error> {
+        match self {
+            Commands::Ping => {
+                cmd.create_interaction_response(ctx.http(), |res| {
+                    res.kind(InteractionResponseType::ChannelMessageWithSource)
+                        .interaction_response_data(|data| {
+                            data.embed(|embed| embed.description("Pong!").color(Color::PURPLE))
+                        })
+                })
+                .await?;
+            }
+        }
+        Ok(())
+    }
+}

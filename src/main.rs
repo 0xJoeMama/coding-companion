@@ -18,10 +18,10 @@ async fn main() -> Result<(), std::io::Error> {
         .event_handler(Handler) // TODO: Requires a static lifetime
         .type_map_insert::<Config>(config)
         .await
-        .expect("Could not create a client for the bot!");
+        .expect("Could not authorize the bot's client!");
 
     if let Err(error) = client.start().await {
-        println!("Couldn't start the bot: {error}");
+        println!("Couldn't start the bot's client: {error}");
     }
 
     Ok(())
