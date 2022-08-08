@@ -5,11 +5,11 @@ use serenity::{
     model::{
         channel::{Message, Reaction},
         gateway::{Activity, ActivityType, Ready},
-        prelude::interaction::{Interaction, InteractionType},
+        prelude::interaction::{application_command::CommandDataOptionValue, Interaction},
     },
 };
 
-use crate::{commands::Commands, config::Config, reaction, thread_channel};
+use crate::{commands::Commands, config::Config, reaction, thread_channel, util};
 
 #[derive(Debug)]
 pub struct Handler;
@@ -29,22 +29,31 @@ impl EventHandler for Handler {
     }
 
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
-        match interaction.kind() {
-            InteractionType::ApplicationCommand => {
-                println!("Received command");
-                // unwrapping works since we just checked if it's a command
-                let cmd = interaction.application_command().unwrap();
+        if let Some(cmd) = interaction.application_command() {
+            let opt = &cmd.data.options;
 
-                let res = match cmd.data.name.as_str() {
-                    "ping" => Commands::Ping.handle(ctx, cmd).await,
-                    _ => Err(serenity::Error::Other("Could not find the target command")),
-                };
+            let res = match cmd.data.name.as_str() {
+                "ping" => Commands::Ping.handle(ctx, cmd).await,
+                "role_message" => Commands::CreateRoleMessage.handle(ctx, cmd).await,
+                "purge" => {
+                    let cnt = opt.get(0).and_then(|it| it.resolved.as_ref());
 
-                if let Err(error) = res {
-                    println!("Error handling command: {error}");
+                    if let Some(CommandDataOptionValue::Integer(cnt)) = cnt {
+                        Commands::Purge {
+                            msg_cnt: *cnt as u64,
+                        }
+                        .handle(ctx, cmd)
+                        .await
+                    } else {
+                        util::invalid_arguments(ctx, cmd).await
+                    }
                 }
+                _ => Err(serenity::Error::Other("Could not find the target command")),
+            };
+
+            if let Err(error) = res {
+                println!("Error handling command: {error}");
             }
-            _ => {}
         }
     }
 
@@ -56,7 +65,7 @@ impl EventHandler for Handler {
         let data = ctx.data.read().await;
         let status = &data
             .get::<Config>()
-            .expect("Could not find config in TypeMap")
+            .expect("Could not find Config in TypeMap")
             .status;
 
         let activity = match status.activity {
@@ -70,11 +79,19 @@ impl EventHandler for Handler {
             .await;
 
         for guild in ready.guilds {
-            println!("Setting commands for {}", guild.id);
+            println!("Setting commands for guild with id {}", guild.id);
             if let Err(error) = guild
                 .id
                 .set_application_commands(ctx.http(), |cmds| {
-                    cmds.create_application_command(|cmd| cmd.name("ping").description("Ping"))
+                    cmds
+                        .create_application_command(|cmd| cmd
+                            .name("ping")
+                            .description("Ping")
+                        )
+                        .create_application_command(|cmd| cmd
+                            .name("role_message")
+                            .description("Create a message that will have all the reaction role reaction added to it.")
+                        )
                 })
                 .await
             {

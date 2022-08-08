@@ -15,7 +15,7 @@ async fn main() -> Result<(), std::io::Error> {
     let config = Config::new("./config.json")?;
 
     let mut client = Client::builder(token, intents)
-        .event_handler(Handler) // TODO: Requires a static lifetime
+        .event_handler(Handler)
         .type_map_insert::<Config>(config)
         .await
         .expect("Could not authorize the bot's client!");

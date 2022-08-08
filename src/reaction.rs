@@ -7,6 +7,10 @@ use serenity::{
 use crate::config::Config;
 
 pub async fn add_role(ctx: Context, reaction: Reaction) -> Option<()> {
+    let user_id = reaction
+        .user_id
+        .filter(|id| ctx.cache.current_user().id.as_u64() != id.as_u64())?;
+
     let data = ctx.data.read().await;
     let cfg = data.get::<Config>()?;
 
@@ -20,12 +24,9 @@ pub async fn add_role(ctx: Context, reaction: Reaction) -> Option<()> {
         name: Some(emoji_name),
     } = &reaction.emoji
     {
-        let role = cfg.get_role(&emoji_name)?;
+        let role = cfg.get_role(emoji_name)?;
         let guild = reaction.guild_id?.to_guild_cached(&ctx)?;
-        let mut member = guild
-            .member(ctx.http(), reaction.user_id.unwrap())
-            .await
-            .ok()?;
+        let mut member = guild.member(ctx.http(), user_id).await.ok()?;
 
         let role = guild.role_by_name(role)?;
 
@@ -36,7 +37,6 @@ pub async fn add_role(ctx: Context, reaction: Reaction) -> Option<()> {
                 member.display_name()
             );
         }
-        ()
     }
 
     None
@@ -56,12 +56,9 @@ pub async fn remove_role(ctx: Context, reaction: Reaction) -> Option<()> {
         name: Some(emoji_name),
     } = &reaction.emoji
     {
-        let role = cfg.get_role(&emoji_name)?;
+        let role = cfg.get_role(emoji_name)?;
         let guild = reaction.guild_id?.to_guild_cached(&ctx)?;
-        let mut member = guild
-            .member(ctx.http(), reaction.user_id.unwrap())
-            .await
-            .ok()?;
+        let mut member = guild.member(ctx.http(), reaction.user_id?).await.ok()?;
 
         let role = guild.role_by_name(role)?;
 
@@ -72,7 +69,6 @@ pub async fn remove_role(ctx: Context, reaction: Reaction) -> Option<()> {
                 member.display_name()
             );
         }
-        ()
     }
 
     None
