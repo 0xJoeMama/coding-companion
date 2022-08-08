@@ -5,7 +5,10 @@ use serenity::{
     model::{
         channel::{Message, Reaction},
         gateway::{Activity, ActivityType, Ready},
-        prelude::interaction::{application_command::CommandDataOptionValue, Interaction},
+        prelude::{
+            command::CommandOptionType,
+            interaction::{application_command::CommandDataOptionValue, Interaction},
+        },
     },
 };
 
@@ -44,6 +47,15 @@ impl EventHandler for Handler {
                         }
                         .handle(ctx, cmd)
                         .await
+                    } else {
+                        util::invalid_arguments(ctx, cmd).await
+                    }
+                }
+                "say" => {
+                    let msg = opt.get(0).and_then(|it| it.resolved.as_ref());
+
+                    if let Some(CommandDataOptionValue::String(msg)) = msg {
+                        Commands::Say { msg: msg.clone() }.handle(ctx, cmd).await
                     } else {
                         util::invalid_arguments(ctx, cmd).await
                     }
@@ -91,6 +103,27 @@ impl EventHandler for Handler {
                         .create_application_command(|cmd| cmd
                             .name("role_message")
                             .description("Create a message that will have all the reaction role reaction added to it.")
+                        )
+                        .create_application_command(|cmd| cmd
+                            .name("purge")
+                            .description("Delete a certain amount of messages from a channel.")
+                            .create_option(|opt| opt
+                                .name("count")
+                                .description("Amount of messages to delete.")
+                                .min_int_value(2)
+                                .max_int_value(100)
+                                .kind(CommandOptionType::Integer)
+                            )
+                        )
+                        .create_application_command(|cmd| cmd
+                            .name("say")
+                            .description("Make the bot say something!")
+                            .create_option(|opt| opt
+                                .name("message")
+                                .description("The message to bot should print.")
+                                .max_length(4096)
+                                .kind(CommandOptionType::String)
+                            )
                         )
                 })
                 .await

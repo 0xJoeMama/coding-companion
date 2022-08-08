@@ -19,6 +19,7 @@ pub enum Commands {
     Ping,
     CreateRoleMessage,
     Purge { msg_cnt: u64 },
+    Say { msg: String },
 }
 
 impl Commands {
@@ -103,6 +104,26 @@ impl Commands {
 
                     channel.delete_messages(ctx.http(), msgs).await?;
                 }
+            }
+            Commands::Say { msg } => {
+                let bot_name = ctx.cache.current_user().name;
+                let icon = ctx
+                    .cache
+                    .current_user()
+                    .avatar_url()
+                    .unwrap_or_else(|| String::new());
+                cmd.create_interaction_response(ctx.http(), |res| {
+                    res.kind(InteractionResponseType::ChannelMessageWithSource)
+                        .interaction_response_data(|data| {
+                            data.embed(|embed| {
+                                embed
+                                    .author(|author| author.name(bot_name).icon_url(icon))
+                                    .colour(Colour::PURPLE)
+                                    .description(msg)
+                            })
+                        })
+                })
+                .await?
             }
         }
 
