@@ -18,12 +18,17 @@ pub struct ThreadChannels {
     pub creation_message: String,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ReactionRoles {
+    pub channel: ChannelId,
+    pub role_map: HashMap<String, String>,
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Config {
     pub prefix: String,
     pub status: Status,
-    pub reaction_roles: HashMap<String, String>,
-    pub reaction_role_channel: ChannelId,
+    pub reaction_roles: ReactionRoles,
     pub thread_channels: ThreadChannels,
 }
 
@@ -37,7 +42,7 @@ impl Config {
     }
 
     pub fn get_role<'a>(&'a self, reaction: &str) -> Option<&'a String> {
-        self.reaction_roles.get(reaction)
+        self.reaction_roles.role_map.get(reaction)
     }
 }
 

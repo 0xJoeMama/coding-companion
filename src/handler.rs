@@ -1,7 +1,6 @@
 use serenity::{
     async_trait,
     client::{Context, EventHandler},
-    http::CacheHttp,
     model::{
         channel::{Message, Reaction},
         gateway::{Activity, ActivityType, Ready},
@@ -10,6 +9,7 @@ use serenity::{
             interaction::{application_command::CommandDataOptionValue, Interaction},
         },
     },
+    Error,
 };
 
 use crate::{commands::Commands, config::Config, reaction, thread_channel, util};
@@ -28,39 +28,50 @@ impl EventHandler for Handler {
     }
 
     async fn message(&self, ctx: Context, msg: Message) {
-        thread_channel::create_thread(ctx, msg).await;
+        if msg.author.id != ctx.cache.current_user().id {
+            thread_channel::create_thread(ctx, msg).await;
+        }
     }
 
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
         if let Some(cmd) = interaction.application_command() {
             let opt = &cmd.data.options;
 
-            let res = match cmd.data.name.as_str() {
-                "ping" => Commands::Ping.handle(ctx, cmd).await,
-                "role_message" => Commands::CreateRoleMessage.handle(ctx, cmd).await,
+            let res: Result<Commands, Error> = match cmd.data.name.as_str() {
+                "ping" => Ok(Commands::Ping),
+                "role_message" => Ok(Commands::CreateRoleMessage),
                 "purge" => {
                     let cnt = opt.get(0).and_then(|it| it.resolved.as_ref());
 
                     if let Some(CommandDataOptionValue::Integer(cnt)) = cnt {
-                        Commands::Purge {
+                        Ok(Commands::Purge {
                             msg_cnt: *cnt as u64,
-                        }
-                        .handle(ctx, cmd)
-                        .await
+                        })
+                    } else if let Err(error) = util::invalid_arguments(&ctx, &cmd).await {
+                        Err(error)
                     } else {
-                        util::invalid_arguments(ctx, cmd).await
+                        Err(Error::Other("Invalid arguments"))
                     }
                 }
                 "say" => {
                     let msg = opt.get(0).and_then(|it| it.resolved.as_ref());
 
                     if let Some(CommandDataOptionValue::String(msg)) = msg {
-                        Commands::Say { msg: msg.clone() }.handle(ctx, cmd).await
+                        Ok(Commands::Say { msg: msg.clone() })
+                    } else if let Err(error) = util::invalid_arguments(&ctx, &cmd).await {
+                        Err(error)
                     } else {
-                        util::invalid_arguments(ctx, cmd).await
+                        Err(Error::Other("Invalid arguments"))
                     }
                 }
+                "lock" => Ok(Commands::Lock),
+                "unlock" => Ok(Commands::Unlock),
                 _ => Err(serenity::Error::Other("Could not find the target command")),
+            };
+
+            let res = match res {
+                Ok(handler) => handler.handle(ctx, cmd).await,
+                Err(error) => Err(error),
             };
 
             if let Err(error) = res {
@@ -94,7 +105,7 @@ impl EventHandler for Handler {
             println!("Setting commands for guild with id {}", guild.id);
             if let Err(error) = guild
                 .id
-                .set_application_commands(ctx.http(), |cmds| {
+                .set_application_commands(&ctx, |cmds| {
                     cmds
                         .create_application_command(|cmd| cmd
                             .name("ping")
@@ -124,6 +135,14 @@ impl EventHandler for Handler {
                                 .max_length(4096)
                                 .kind(CommandOptionType::String)
                             )
+                        )
+                        .create_application_command(|cmd| cmd
+                            .name("lock")
+                            .description("Lock the current text channel. This makes it visible but disallows non-admins from typing.")
+                        )
+                        .create_application_command(|cmd| cmd
+                            .name("unlock")
+                            .description("Unlocks the current text channel. This makes it public!")
                         )
                 })
                 .await

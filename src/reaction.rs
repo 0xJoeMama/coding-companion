@@ -1,6 +1,5 @@
 use serenity::{
     client::Context,
-    http::CacheHttp,
     model::channel::{Reaction, ReactionType},
 };
 
@@ -14,7 +13,7 @@ pub async fn add_role(ctx: Context, reaction: Reaction) -> Option<()> {
     let data = ctx.data.read().await;
     let cfg = data.get::<Config>()?;
 
-    if reaction.channel_id != cfg.reaction_role_channel {
+    if reaction.channel_id != cfg.reaction_roles.channel {
         return None;
     }
 
@@ -26,11 +25,11 @@ pub async fn add_role(ctx: Context, reaction: Reaction) -> Option<()> {
     {
         let role = cfg.get_role(emoji_name)?;
         let guild = reaction.guild_id?.to_guild_cached(&ctx)?;
-        let mut member = guild.member(ctx.http(), user_id).await.ok()?;
+        let mut member = guild.member(&ctx, user_id).await.ok()?;
 
         let role = guild.role_by_name(role)?;
 
-        if member.add_role(ctx.http(), role.id).await.is_ok() {
+        if member.add_role(&ctx, role.id).await.is_ok() {
             println!(
                 "Added reaction role '{}' to user '{}'.",
                 role.name,
@@ -46,7 +45,7 @@ pub async fn remove_role(ctx: Context, reaction: Reaction) -> Option<()> {
     let data = ctx.data.read().await;
     let cfg = data.get::<Config>()?;
 
-    if reaction.channel_id != cfg.reaction_role_channel {
+    if reaction.channel_id != cfg.reaction_roles.channel {
         return None;
     }
 
@@ -58,11 +57,11 @@ pub async fn remove_role(ctx: Context, reaction: Reaction) -> Option<()> {
     {
         let role = cfg.get_role(emoji_name)?;
         let guild = reaction.guild_id?.to_guild_cached(&ctx)?;
-        let mut member = guild.member(ctx.http(), reaction.user_id?).await.ok()?;
+        let mut member = guild.member(&ctx, reaction.user_id?).await.ok()?;
 
         let role = guild.role_by_name(role)?;
 
-        if member.remove_role(ctx.http(), role.id).await.is_ok() {
+        if member.remove_role(&ctx, role.id).await.is_ok() {
             println!(
                 "Removed reaction role '{}' from '{}'.",
                 role.name,

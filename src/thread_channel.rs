@@ -1,5 +1,4 @@
 use regex::Regex;
-use serenity::http::CacheHttp;
 use serenity::utils::Color;
 use serenity::{client::Context, model::channel::Message};
 
@@ -11,7 +10,7 @@ pub async fn create_thread(ctx: Context, msg: Message) -> Option<()> {
 
     // TODO: Maybe cache channel IDs here?
     let channel = msg
-        .channel(ctx.http())
+        .channel(&ctx)
         .await
         .ok()
         .and_then(|channel| channel.guild())
@@ -21,12 +20,12 @@ pub async fn create_thread(ctx: Context, msg: Message) -> Option<()> {
         let thread_name = create_thread_name(&msg);
 
         let thread = thread_channel
-            .create_public_thread(ctx.http(), msg.id, |thread| thread.name(&thread_name))
+            .create_public_thread(&ctx, msg.id, |thread| thread.name(&thread_name))
             .await
             .ok()?;
 
         thread
-            .send_message(ctx.http(), |msg| {
+            .send_message(&ctx, |msg| {
                 msg.embed(|embed| {
                     embed
                         .color(Color::BLUE)

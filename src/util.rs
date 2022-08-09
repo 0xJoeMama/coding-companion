@@ -1,21 +1,25 @@
 use serenity::{
     client::Context,
-    http::CacheHttp,
-    model::prelude::interaction::{
-        application_command::ApplicationCommandInteraction, InteractionResponseType,
+    model::{
+        channel::{PermissionOverwrite, PermissionOverwriteType},
+        id::ChannelId,
+        prelude::interaction::{
+            application_command::ApplicationCommandInteraction, InteractionResponseType,
+        },
+        Permissions,
     },
     utils::Colour,
     Error,
 };
 
 pub async fn invalid_arguments(
-    ctx: Context,
-    cmd: ApplicationCommandInteraction,
+    ctx: &Context,
+    cmd: &ApplicationCommandInteraction,
 ) -> Result<(), Error> {
-    cmd.create_interaction_response(ctx.http(), |res| {
+    cmd.create_interaction_response(&ctx, |res| {
         res.kind(InteractionResponseType::ChannelMessageWithSource)
-            .interaction_response_data(|msg| {
-                msg.embed(|embed| {
+            .interaction_response_data(|data| {
+                data.embed(|embed| {
                     embed
                         .title("Invalid arguments!")
                         .description(
@@ -23,7 +27,38 @@ pub async fn invalid_arguments(
                         )
                         .colour(Colour::RED)
                 })
+                .ephemeral(true)
             })
     })
     .await
+}
+
+pub async fn apply_permissions(
+    ctx: &Context,
+    channel_id: ChannelId,
+    perms: Permissions,
+    role: &str,
+) -> Result<(), Error> {
+    let channel = channel_id
+        .to_channel(&ctx)
+        .await
+        .and_then(|it| it.guild().ok_or(Error::Other("Not a guild channel")))?;
+
+    let guild = channel.guild(&ctx);
+
+    if let Some(guild) = guild {
+        let everyone = guild.role_by_name(role).ok_or(Error::Other(
+            "The 'everyone' role must exist in all guilds!",
+        ))?;
+
+        let overwrite = PermissionOverwrite {
+            allow: perms,
+            deny: !perms,
+            kind: PermissionOverwriteType::Role(everyone.id),
+        };
+
+        channel.create_permission(&ctx, &overwrite).await?;
+    };
+
+    Ok(())
 }
