@@ -106,6 +106,7 @@ name = "coding-companion"
 version = "1.0.0"
 dependencies = [
  "dotenv",
+ "lazy_static",
  "regex",
  "serde",
  "serde_json",

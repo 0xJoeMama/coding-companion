@@ -105,15 +105,16 @@ impl Commands {
                         .map(|msg| msg.id)
                         .collect::<Vec<_>>();
 
-                    channel.delete_messages(&ctx, msgs).await?;
+                    channel.delete_messages(&ctx, &msgs).await?;
 
                     cmd.create_interaction_response(&ctx, |res| {
                         res.interaction_response_data(|data| {
                             data.embed(|embed| {
                                 embed
                                     .description(format!(
-                                        "**{}** purged {} m180essages!",
-                                        cmd.user.name, msg_cnt
+                                        "**{}** purged {} messages!",
+                                        cmd.user.name,
+                                        &msgs.len()
                                     ))
                                     .colour(Colour::BLUE)
                             })
@@ -181,7 +182,7 @@ impl Commands {
                             data.embed(|embed| {
                                 embed
                                     .description(format!(
-                                        "**{}** locked this channel!",
+                                        "**{}** unlocked this channel!",
                                         cmd.user.name
                                     ))
                                     .colour(Colour::PURPLE)

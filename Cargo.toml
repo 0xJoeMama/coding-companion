@@ -15,7 +15,7 @@ tokio = { version = "1.0", features = ["macros", "rt-multi-thread"]} # async run
 serde = "*" # serialization/deserialization library
 serde_json = "*" # JSON integration for serde
 regex = "*" # regular expression support
-
+lazy_static = "*"
 
 [dependencies.serenity] # Discord API wrapper
 version = "*"

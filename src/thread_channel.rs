@@ -1,3 +1,4 @@
+use lazy_static::lazy_static;
 use regex::Regex;
 use serenity::utils::Color;
 use serenity::{client::Context, model::channel::Message};
@@ -48,9 +49,12 @@ pub async fn create_thread(ctx: Context, msg: Message) -> Option<()> {
 
 fn create_thread_name(msg: &Message) -> String {
     // TODO: Maybe make this cached? It was cached but switching to type map required we stopped caching it.
-    let emoji_regex: Regex = Regex::new(r"<:.+:[0-9]+>").unwrap();
+    lazy_static! {
+        static ref EMOJI_REGEX: Regex = Regex::new(r"<:.+:[0-9]+>").unwrap();
+    }
+
     // TODO: Maybe use a config for the default value here!
-    let thread_name = emoji_regex.replace_all(msg.content.trim(), "");
+    let thread_name = EMOJI_REGEX.replace_all(msg.content.trim(), "");
     if thread_name.is_empty() {
         format!("Message from {}", msg.author.name)
     } else {
