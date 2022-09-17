@@ -9,9 +9,13 @@ description = "The Discord bot used to manage the 'Coding Factory' discord commu
 keywords = ["discord", "bot", "serenity", "manage", "utility", "server"]
 readme = "README.md"
 
+
 [dependencies]
 dotenv = "*" # .env file parser
-tokio = { version = "1.0", features = ["macros", "rt-multi-thread"]} # async runtime
+tokio = { version = "1.0", features = [
+  "macros",
+  "rt-multi-thread",
+] } # async runtime
 serde = "*" # serialization/deserialization library
 serde_json = "*" # JSON integration for serde
 regex = "*" # regular expression support
@@ -21,14 +25,14 @@ lazy_static = "*"
 version = "*"
 default-features = false
 features = [
-    "builder",
-    "cache",
-    "client",
-    "gateway",
-    "model",
-    "http",
-    "utils",
-    "rustls_backend"
+  "builder",
+  "cache",
+  "client",
+  "gateway",
+  "model",
+  "http",
+  "utils",
+  "rustls_backend",
 ]
 
 [dev-dependencies]
