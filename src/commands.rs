@@ -23,6 +23,7 @@ pub enum Commands {
     Say { msg: String },
     Lock,
     Unlock,
+    Tldr,
 }
 
 impl Commands {
@@ -120,7 +121,7 @@ impl Commands {
                             })
                         })
                     })
-                    .await?
+                    .await?;
                 }
             }
             Self::Say { msg } => {
@@ -191,6 +192,14 @@ impl Commands {
                     })
                 )?
                 .0
+            }
+            Self::Tldr => {
+                cmd.create_interaction_response(&ctx, |res| {
+                    res.interaction_response_data(|data| {
+                        data.content("*No!*\n**I don't get paid for this shit**")
+                    })
+                })
+                .await?;
             }
         }
 

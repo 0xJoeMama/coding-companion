@@ -66,6 +66,7 @@ impl EventHandler for Handler {
                 }
                 "lock" => Ok(Commands::Lock),
                 "unlock" => Ok(Commands::Unlock),
+                "tldr" => Ok(Commands::Tldr),
                 _ => Err(serenity::Error::Other("Could not find the target command")),
             };
 
@@ -143,6 +144,10 @@ impl EventHandler for Handler {
                         .create_application_command(|cmd| cmd
                             .name("unlock")
                             .description("Unlocks the current text channel. This makes it public!")
+                        )
+                        .create_application_command(|cmd| cmd
+                            .name("tldr")
+                            .description("Give a tldr.")
                         )
                 })
                 .await
