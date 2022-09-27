@@ -196,7 +196,7 @@ impl Commands {
             Self::Tldr => {
                 cmd.create_interaction_response(&ctx, |res| {
                     res.interaction_response_data(|data| {
-                        data.content("*No!*\n**I don't get paid for this shit**")
+                        data.content("*No.*\n**I don't get paid for this shit**")
                     })
                 })
                 .await?;

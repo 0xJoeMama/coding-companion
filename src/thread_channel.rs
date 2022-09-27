@@ -48,7 +48,6 @@ pub async fn create_thread(ctx: Context, msg: Message) -> Option<()> {
 }
 
 fn create_thread_name(msg: &Message) -> String {
-    // TODO: Maybe make this cached? It was cached but switching to type map required we stopped caching it.
     lazy_static! {
         static ref EMOJI_REGEX: Regex = Regex::new(r"<:.+:[0-9]+>").unwrap();
     }
