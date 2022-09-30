@@ -1,0 +1,15 @@
+{
+  "prefix": "!",
+  "status": {
+    "activity": 2,
+    "message": "with you?!"
+  },
+  "reaction_roles": {
+    "channel": 1002245942776447006,
+    "role_map": {}
+  },
+  "thread_channels": {
+    "channels": [],
+    "creation_message": "Please continue conversation about this topic in this thread!"
+  }
+}
