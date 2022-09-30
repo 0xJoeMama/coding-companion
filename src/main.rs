@@ -21,7 +21,7 @@ async fn main() {
             .expect("Could not authorize the bot's client!");
 
         if let Err(error) = client.start().await {
-            panic!("Couldn't start the bot's client: {error}")
+            panic!("Couldn't start the bot's client: {error}");
         }
     } else if let Err(why) = config {
         panic!("Config error: {}", why);
