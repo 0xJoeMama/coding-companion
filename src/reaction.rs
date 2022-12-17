@@ -38,7 +38,7 @@ pub async fn add_role(ctx: Context, reaction: Reaction) -> Option<()> {
         }
     }
 
-    None
+    Some(())
 }
 
 pub async fn remove_role(ctx: Context, reaction: Reaction) -> Option<()> {
@@ -70,5 +70,5 @@ pub async fn remove_role(ctx: Context, reaction: Reaction) -> Option<()> {
         }
     }
 
-    None
+    Some(())
 }
