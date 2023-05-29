@@ -6,13 +6,16 @@ use serenity::{
         gateway::{Activity, ActivityType, Ready},
         prelude::{
             command::CommandOptionType,
-            interaction::{application_command::CommandDataOptionValue, Interaction},
+            interaction::{Interaction, InteractionType},
         },
     },
-    Error,
 };
 
-use crate::{commands::Commands, config::Config, reaction, thread_channel, util};
+use crate::{
+    commands::{CommandInstance, CommandParseError},
+    config::Config,
+    reaction, thread_channel, util,
+};
 
 #[derive(Debug)]
 pub struct Handler;
@@ -34,49 +37,27 @@ impl EventHandler for Handler {
     }
 
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
-        if let Some(cmd) = interaction.application_command() {
-            let opt = &cmd.data.options;
+        match interaction.kind() {
+            InteractionType::ApplicationCommand => {
+                let cmd = interaction.application_command().unwrap();
+                let res: Result<_, CommandParseError> = CommandInstance::try_from(cmd);
 
-            let res: Result<Commands, Error> = match cmd.data.name.as_str() {
-                "ping" => Ok(Commands::Ping),
-                "role_message" => Ok(Commands::CreateRoleMessage),
-                "purge" => {
-                    let cnt = opt.get(0).and_then(|it| it.resolved.as_ref());
+                let res = match res {
+                    Ok(handler) => handler.handle(ctx).await,
+                    Err(error) => match error {
+                        CommandParseError::NonExistingCommand => Ok(()),
+                        CommandParseError::InvalidArgs { cmd } => {
+                            util::invalid_arguments(&ctx, &cmd).await
+                        }
+                    },
+                };
 
-                    if let Some(CommandDataOptionValue::Integer(cnt)) = cnt {
-                        Ok(Commands::Purge {
-                            msg_cnt: *cnt as u64,
-                        })
-                    } else if let Err(error) = util::invalid_arguments(&ctx, &cmd).await {
-                        Err(error)
-                    } else {
-                        Err(Error::Other("Invalid arguments"))
-                    }
+                if let Err(error) = res {
+                    eprintln!("Could not handle command: {error}");
                 }
-                "say" => {
-                    let msg = opt.get(0).and_then(|it| it.resolved.as_ref());
-
-                    if let Some(CommandDataOptionValue::String(msg)) = msg {
-                        Ok(Commands::Say { msg: msg.clone() })
-                    } else if let Err(error) = util::invalid_arguments(&ctx, &cmd).await {
-                        Err(error)
-                    } else {
-                        Err(Error::Other("Invalid arguments"))
-                    }
-                }
-                "lock" => Ok(Commands::Lock),
-                "unlock" => Ok(Commands::Unlock),
-                "tldr" => Ok(Commands::Tldr),
-                _ => Err(serenity::Error::Other("Could not find the target command")),
-            };
-
-            let res = match res {
-                Ok(handler) => handler.handle(ctx, cmd).await,
-                Err(error) => Err(error),
-            };
-
-            if let Err(error) = res {
-                println!("Error handling command: {error}");
+            }
+            kind => {
+                eprintln!("Interaction of kind {kind:?} was queued. Ignoring it...")
             }
         }
     }

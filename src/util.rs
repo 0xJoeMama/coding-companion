@@ -44,12 +44,12 @@ pub async fn apply_permissions(
         .await
         .and_then(|it| it.guild().ok_or(Error::Other("Not a guild channel")))?;
 
-    let guild = channel.guild(&ctx);
+    let guild = channel.guild(ctx);
 
     if let Some(guild) = guild {
-        let everyone = guild.role_by_name(role).ok_or(Error::Other(
-            "The 'everyone' role must exist in all guilds!",
-        ))?;
+        let everyone = guild
+            .role_by_name(role)
+            .ok_or(Error::Other("Could not find a requested role"))?;
 
         let overwrite = PermissionOverwrite {
             allow: perms,

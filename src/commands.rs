@@ -1,3 +1,4 @@
+use serenity::model::prelude::interaction::application_command::CommandDataOptionValue;
 use serenity::{
     client::Context,
     model::{
@@ -26,9 +27,68 @@ pub enum Commands {
     Tldr,
 }
 
+pub struct CommandInstance {
+    interaction: ApplicationCommandInteraction,
+    cmd: Commands,
+}
+
+pub enum CommandParseError {
+    InvalidArgs { cmd: ApplicationCommandInteraction },
+    NonExistingCommand,
+}
+
+impl TryFrom<ApplicationCommandInteraction> for CommandInstance {
+    type Error = CommandParseError;
+
+    fn try_from(value: ApplicationCommandInteraction) -> Result<Self, Self::Error> {
+        let data = &value.data;
+        let opt = &data.options;
+
+        let cmd = match data.name.as_str() {
+            "ping" => Commands::Ping,
+            "role_message" => Commands::CreateRoleMessage,
+            "purge" => {
+                let cnt = opt.get(0).and_then(|opt_val| opt_val.resolved.as_ref());
+
+                if let Some(CommandDataOptionValue::Integer(cnt)) = cnt {
+                    Commands::Purge {
+                        msg_cnt: *cnt as u64,
+                    }
+                } else {
+                    return Err(CommandParseError::InvalidArgs { cmd: value });
+                }
+            }
+            "say" => {
+                let msg = opt.get(0).and_then(|opt_val| opt_val.resolved.as_ref());
+
+                if let Some(CommandDataOptionValue::String(msg)) = msg {
+                    Commands::Say { msg: msg.clone() }
+                } else {
+                    return Err(CommandParseError::InvalidArgs { cmd: value });
+                }
+            }
+            "lock" => Commands::Lock,
+            "unlock" => Commands::Unlock,
+            "tldr" => Commands::Tldr,
+            _ => return Err(CommandParseError::NonExistingCommand),
+        };
+
+        Ok(Self {
+            interaction: value,
+            cmd,
+        })
+    }
+}
+
+impl CommandInstance {
+    pub async fn handle(self, ctx: Context) -> Result<(), serenity::Error> {
+        self.cmd.handle(ctx, self.interaction).await
+    }
+}
+
 impl Commands {
     pub async fn handle(
-        &self,
+        self,
         ctx: Context,
         cmd: ApplicationCommandInteraction,
     ) -> Result<(), serenity::Error> {
@@ -100,7 +160,7 @@ impl Commands {
                 let channel = cmd.channel_id.to_channel(&ctx).await?;
                 if let Some(channel) = channel.guild() {
                     let msgs = channel
-                        .messages(&ctx, |msgs| msgs.limit(*msg_cnt))
+                        .messages(&ctx, |msgs| msgs.limit(msg_cnt))
                         .await?
                         .iter()
                         .map(|msg| msg.id)
